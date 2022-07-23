@@ -1,0 +1,181 @@
+---
+title: "R CASE STUDY 1 (Retail)"
+author: "Salman"
+date: "07/03/2022"
+output: html_document
+---
+
+```{r}
+Customer <- read.csv("Customer.csv")
+prod_cat_info <- read.csv("prod_cat_info.csv")
+Transactions <- read.csv("Transactions.csv")
+```
+
+Question 1.
+
+a. Use the base merge()
+```{r}
+Customer_Final <- merge(x=Transactions, y=Customer, by.x=c("cust_id"), by.y=c("customer_Id"), all.x=TRUE, all.y=FALSE)
+Customer_Final <- merge(x=Customer_Final, y=prod_cat_info, by.x=c("prod_cat_code", "prod_subcat_code"), by.y=c("prod_cat_code", "prod_sub_cat_code"), all.x=TRUE, all.y=FALSE)
+```
+
+b. Dplyr merge functions
+```{r}
+library(dplyr)
+Customer_Final <- Transactions %>% left_join(Customer, by=c("cust_id"="customer_Id"))
+Customer_Final <- Customer_Final %>% left_join(prod_cat_info, by=c("prod_cat_code", "prod_subcat_code"="prod_sub_cat_code"))
+```
+
+Question 2.
+
+a.
+```{r}
+str(Customer_Final)
+```
+
+b.
+```{r}
+head(Customer_Final, n=10)
+tail(Customer_Final, n=10)
+```
+
+c.
+```{r}
+summary(Customer_Final)
+```
+
+d.
+```{r}
+Customer_Final$Store_type <- factor(Customer_Final$Store_type)
+summary(Customer_Final$Store_type)
+Customer_Final$Gender <- factor(Customer_Final$Gender)
+summary(Customer_Final$Gender)
+Customer_Final$prod_cat <- factor(Customer_Final$prod_cat)
+summary(Customer_Final$prod_cat)
+Customer_Final$prod_subcat <- factor(Customer_Final$prod_subcat)
+summary(Customer_Final$prod_subcat)
+```
+
+Question 3.
+
+#Histograms
+```{r}
+library(ggplot2)
+ggplot(Customer_Final,aes(x=transaction_id))+geom_histogram(bins=40)+ggtitle("Histogram of transaction_id")
+
+ggplot(Customer_Final,aes(x=cust_id))+geom_histogram(bins=40)+ggtitle("Histogram of cust_id")
+
+ggplot(Customer_Final,aes(x=prod_subcat_code))+geom_histogram(bins=12)+ggtitle("Histogram of prod_subcat_code")
+
+ggplot(Customer_Final,aes(x=prod_cat_code))+geom_histogram(bins=6)+ggtitle("Histogram of prod_cat_code")
+
+ggplot(Customer_Final,aes(x=Qty))+geom_histogram(bins=10)+ggtitle("Histogram of Qty")
+
+ggplot(Customer_Final,aes(x=Rate))+geom_histogram(bins=40)+ggtitle("Histogram of Rate")
+
+ggplot(Customer_Final,aes(x=Tax))+geom_histogram(bins=40)+ggtitle("Histogram of Tax")
+
+ggplot(Customer_Final,aes(x=total_amt))+geom_histogram(bins=40)+ggtitle("Histogram of total_amt")
+
+ggplot(Customer_Final,aes(x=city_code))+geom_histogram(bins=10)+ggtitle("Histogram of city_code")
+```
+
+#Frequency Bars
+```{r}
+ggplot(Customer_Final, aes(x=factor(Store_type)))+geom_bar()+ggtitle("Store Type")
+
+ggplot(Customer_Final, aes(x=factor(Gender)))+geom_bar()+ggtitle("Gender")
+
+ggplot(Customer_Final, aes(x=factor(prod_cat)))+geom_bar()+ggtitle("Product Category")
+
+ggplot(Customer_Final, aes(x=factor(prod_subcat)))+geom_bar()+ggtitle("Product Sub-category")
+```
+
+Question 4.
+
+a.
+```{r}
+library(lubridate)
+Customer_Final$tran_date <- dmy(Customer_Final$tran_date)
+Time_period <- max(Customer_Final$tran_date)-min(Customer_Final$tran_date)
+print(Time_period)
+```
+
+b.
+```{r}
+Count_of_Negative_Transactions <- Customer_Final %>% filter(total_amt<0) %>% summarize(Count_of_Negative_Transactions=n())
+print(Count_of_Negative_Transactions)
+```
+
+Question 5.
+
+```{r}
+Male_Count <- Customer_Final %>% filter(Gender=="M") %>% group_by(prod_cat) %>% summarize(Male_Count=n())
+print(Male_Count)
+Female_Count <- Customer_Final %>% filter(Gender=="F") %>% group_by(prod_cat) %>% summarize(Female_Count=n())
+print(Female_Count)
+
+ggplot(Customer_Final, aes(x=prod_cat, fill=Gender))+geom_bar()
+```
+
+Question 6.
+
+```{r}
+Max_City_Customer <- Customer_Final %>% group_by(city_code) %>% summarize(Customer_Count=n()) %>% slice_max(Customer_Count, n=1)
+print(Max_City_Customer)
+
+Percentage_of_Max_City_Customer <- Customer_Final %>% group_by(city_code) %>% summarize(Customer_Count=n()) %>% mutate(Percentage=Customer_Count/sum(Customer_Count)*100) %>% slice_max(Customer_Count, n=1)
+print(Percentage_of_Max_City_Customer)
+```
+
+Question 7.
+
+```{r}
+Sales_by_Value <- Customer_Final %>% group_by(Store_type) %>% summarize(Sales_by_Value=sum(total_amt)) %>% slice_max(Sales_by_Value, n=1)
+print(Sales_by_Value)
+
+Sales_by_Qty <- Customer_Final %>% group_by(Store_type) %>% summarize(Sales_by_Qty=sum(Qty)) %>% slice_max(Sales_by_Qty, n=1)
+print(Sales_by_Qty)
+```
+
+Question 8.
+
+```{r}
+Flagship_Stores_Electronics <- Customer_Final %>% filter(Store_type=="Flagship store") %>% group_by(prod_cat) %>% summarize(Total_Amt_Earned=sum(total_amt)) %>% slice(4)
+print(Flagship_Stores_Electronics)
+
+Flagship_Stores_Clothing <- Customer_Final %>% filter(Store_type=="Flagship store") %>% group_by(prod_cat) %>% summarize(Total_Amt_Earned=sum(total_amt)) %>% slice(3)
+print(Flagship_Stores_Clothing)
+```
+
+Question 9.
+
+```{r}
+Male_Customers <- Customer_Final %>% filter(prod_cat=="Electronics") %>% group_by(Gender) %>% summarize(Total_Amt_Earned=sum(total_amt)) %>% slice(2)
+print(Male_Customers)
+```
+
+Question 10.
+
+```{r}
+Customers_more_than_10_Transactions <- Customer_Final %>% group_by(cust_id) %>% filter(total_amt>0) %>% summarize(No._of_Transactions=n()) %>% filter(No._of_Transactions>10)
+print(Customers_more_than_10_Transactions)
+```
+
+Question 11.
+
+a.
+```{r}
+Customer_Final$DOB <- dmy(Customer_Final$DOB)
+Total_Amt_Spent_Electronics <- Customer_Final %>% mutate(Age=(tran_date - DOB)/365) %>% filter(Age>=25, Age<=35) %>% group_by(prod_cat) %>% summarize(Total_Amt_Spent=sum(total_amt)) %>% slice(4)
+print(Total_Amt_Spent_Electronics)
+
+Total_Amt_Spent_Books <- Customer_Final %>% mutate(Age=(tran_date - DOB)/365) %>% filter(Age>=25, Age<=35) %>% group_by(prod_cat) %>% summarize(Total_Amt_Spent=sum(total_amt)) %>% slice(2)
+print(Total_Amt_Spent_Books)
+```
+
+b.
+```{r}
+Total_Amt_Spent <- Customer_Final %>% mutate(Age=(tran_date - DOB)/365) %>% filter(Age>=25, Age<=35 & tran_date>="2014-01-01", tran_date<="2014-03-01") %>% summarize(Total_Amt_Spent=sum(total_amt))
+print(Total_Amt_Spent)
+```
